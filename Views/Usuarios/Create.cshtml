@@ -1,0 +1,60 @@
+﻿@model OvejaNegra.Models.Usuario
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Nuevo Usuario</h1>
+
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="Nombre" class="control-label"></label>
+                <input asp-for="Nombre" class="form-control" />
+                <span asp-validation-for="Nombre" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Apellido" class="control-label"></label>
+                <input asp-for="Apellido" class="form-control" />
+                <span asp-validation-for="Apellido" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="username" class="control-label"></label>
+                <input asp-for="username" class="form-control" />
+                <span asp-validation-for="username" class="text-danger"></span>
+            </div>
+            <div class="form-group mb-3">
+                <label asp-for="password" class="control-label"></label>
+                <input type="password" asp-for="password" class="form-control" />
+                <span asp-validation-for="password" class="text-danger"></span>
+            </div>
+            <div class="form-group mb-3">
+                <label>Confirmar Contraseña</label>
+                <input type="password" id="confirmarPass" class="form-control" />
+                <span id="errorPass" class="text-danger" style="display:none">
+                    Las contraseñas no coinciden
+                </span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Rol" class="control-label"></label>
+                <select asp-for="Rol" class="form-control">
+                    <option asp-for="1">Administrador</option>
+                    <option asp-for="2">Cajero</option>
+                    <option asp-for="3">Mesero</option>
+                </select>
+                <span asp-validation-for="Rol" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Volver</a>
+</div>
+

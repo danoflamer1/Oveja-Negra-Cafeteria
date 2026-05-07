@@ -1,0 +1,112 @@
+﻿@model IEnumerable<OvejaNegra.Models.Comanda>
+@{
+    ViewData["Title"] = "Comanda";
+}
+
+<h1>Lista de Pedidos</h1>
+<p>
+    <a asp-action="Create">Añadir Pedido</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>@Html.DisplayNameFor(model => model.Fecha)</th>
+            <th>@Html.DisplayNameFor(model => model.Nro_Mesa)</th>
+            <th>@Html.DisplayNameFor(model => model.Estado)</th>
+            <th>@Html.DisplayNameFor(model => model.Usuario.Apellido)</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@Html.DisplayFor(modelItem => item.Fecha)</td>
+                <td>@Html.DisplayFor(modelItem => item.Nro_Mesa)</td>
+                <td>
+                    @if (item.Estado == OvejaNegra.Dtos.EstadoEnum.Pendiente)
+                    {
+                        <span>Pendiente</span>
+                    }
+                    @if (item.Estado == OvejaNegra.Dtos.EstadoEnum.EnPreparacion)
+                    {
+                        <span>En Preparación</span>
+                    }
+                    @if (item.Estado == OvejaNegra.Dtos.EstadoEnum.ListoParaServir)
+                    {
+                        <span>Listo Para Servir</span>
+                    }
+                    @if (item.Estado == OvejaNegra.Dtos.EstadoEnum.Servido)
+                    {
+                        <span>Servido</span>
+                    }
+                </td>
+                <td>@Html.DisplayFor(modelItem => item.Usuario.Apellido)</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id">Editar</a> |
+                    <a asp-action="Details" asp-route-id="@item.Id">Detalles</a> |
+                    <div class="dropdown d-inline">
+                        <button class="btn btn-sm btn-outline-primary dropdown-toggle"
+                                type="button"
+                                data-bs-toggle="dropdown">
+                            Estado
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="#"
+                                   onclick="cambiarEstado(@item.Id, 1)">
+                                    Pendiente
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="#"
+                                   onclick="cambiarEstado(@item.Id, 2)">
+                                    En Preparacion
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="#"
+                                   onclick="cambiarEstado(@item.Id, 3)">
+                                    Listo Para Servir
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="#"
+                                   onclick="cambiarEstado(@item.Id, 4)">
+                                    Servido
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-danger" href="#"
+                                   onclick="cambiarEstado(@item.Id, 6)">
+                                    Cancelar
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<script>
+    function cambiarEstado(comandaId, estado) {
+        let mensaje = estado === 6
+            ? "Seguro que quieres cancelar este pedido?"
+            : "Cambiar el estado del pedido?";
+
+        if (!confirm(mensaje)) return;
+
+        fetch('/Comandas/CambiarEstado', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ comandaId: comandaId, estado: estado })
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (d.ok) location.reload();
+        });
+    }
+</script>

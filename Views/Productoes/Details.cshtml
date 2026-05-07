@@ -1,0 +1,67 @@
+﻿@model OvejaNegra.Models.Producto
+
+@{
+    ViewData["Title"] = "Details";
+}
+
+<h1>Details</h1>
+
+<div>
+    <h4>Producto</h4>
+    <hr />
+
+    <div class="row">
+        <div class="col-sm-4">
+            @if(Model.Imagen != null)
+            {
+                <img src="~/imagenes/@Model.Imagen" class="img-thumbnail" width="250 px" />
+            }
+        </div>
+        <div class="col-sm-8">
+            <dl class="row">
+                <dt class="col-sm-2">
+                    @Html.DisplayNameFor(model => model.Nombre)
+                </dt>
+                <dd class="col-sm-10">
+                    @Html.DisplayFor(model => model.Nombre)
+                </dd>
+                <dt class="col-sm-2">
+                    @Html.DisplayNameFor(model => model.Precio)
+                </dt>
+                <dd class="col-sm-10">
+                    @Html.DisplayFor(model => model.Precio)
+                </dd>
+                <dt class="col-sm-2">
+                    @Html.DisplayNameFor(model => model.Disponible)
+                </dt>
+                <dd class="col-sm-10">
+                    @Html.DisplayFor(model => model.Disponible)
+                </dd>
+                <dt class="col-sm-2">
+                    @Html.DisplayNameFor(model => model.Descripcion)
+                </dt>
+                <dd class="col-sm-10">
+                    @Html.DisplayFor(model => model.Descripcion)
+                </dd>
+                <dt class="col-sm-2">
+                    @Html.DisplayNameFor(model => model.Imagen)
+                </dt>
+                <dd class="col-sm-10">
+                    @Html.DisplayFor(model => model.Imagen)
+                </dd>
+                <dt class="col-sm-2">
+                    @Html.DisplayNameFor(model => model.Categoria)
+                </dt>
+                <dd class="col-sm-10">
+                    @Html.DisplayFor(model => model.Categoria.Nombre)
+                </dd>
+            </dl>
+        </div>
+    </div>
+
+    
+</div>
+<div>
+    <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a> |
+    <a asp-action="Index">Back to List</a>
+</div>

@@ -1,0 +1,57 @@
+﻿@model OvejaNegra.Models.Comanda
+
+@{
+    ViewData["Title"] = "Details";
+}
+
+<h1>Detalles del Pedido</h1>
+
+<div>
+    <hr />
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Precio</th>
+                <th>Subtotal</th>
+                <th>Observaciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var detalle in Model.DetallesComanda)
+            {
+                <tr>
+                    <td>@detalle.Producto.Nombre</td>
+                    <td>@detalle.Cantidad</td>
+                    <td>Bs @detalle.Precio_unitario.ToString("0.00")</td>
+                    <td>Bs @((detalle.Cantidad * detalle.Precio_unitario).ToString("0.00"))</td>
+                    <td>@(detalle.Observacion ?? "-")</td>
+                </tr>
+            }
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="3"><strong>Total</strong></td>
+                <td>
+                    <strong>
+                        Bs @Model.DetallesComanda.Sum(d => d.Cantidad * d.Precio_unitario).ToString("0.00")
+                    </strong>
+                </td>
+                <td></td>
+            </tr>
+        </tfoot>
+    </table>
+    <dl class="row">
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Estado)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Estado)
+        </dd>
+    </dl>
+</div>
+<div>
+    <a asp-action="Edit" asp-route-id="@Model?.Id">Editar</a> |
+    <a asp-action="Index">Volver</a>
+</div>

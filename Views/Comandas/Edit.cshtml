@@ -1,0 +1,187 @@
+﻿@model OvejaNegra.ViewModels.EditarComandaVM
+
+<h2>Editar Pedido - Mesa @Model.NroMesa</h2>
+<input type="hidden" id="comandaId" value="@Model.ComandaId" />
+<div class="mb-3">
+    <label>Mesa:</label>
+    <select id="mesa" class="form-control">
+        @for (int i = 1; i <= 10; i++)
+        {
+            if (Model.NroMesa == i)
+            {
+                <option value="@i" selected>Mesa @i</option>
+            }
+            else
+            {
+                <option value="@i">Mesa @i</option>
+            }
+        }
+    </select>
+</div>
+
+<hr />
+<h4>Productos en el pedido</h4>
+<div id="pedido-actual">
+    @foreach (var cat in Model.Categorias)
+    {
+        foreach (var prod in cat.Productos)
+        {
+            if (Model.Items.ContainsKey(prod.Id))
+            {
+                var item = Model.Items[prod.Id];
+                <div class="card mb-2">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5>@prod.Nombre</h5>
+                            <p class="mb-0">Bs @prod.Precio</p>
+                        </div>
+                        <div class="text-center">
+                            <button onclick="cambiar(@prod.Id, -1)">-</button>
+                            <span id="cant-@prod.Id">@item.Cantidad</span>
+                            <button onclick="cambiar(@prod.Id, 1)">+</button>
+                        </div>
+                        <input type="text"
+                               id="obs-@prod.Id"
+                               class="form-control mt-2"
+                               placeholder="observ..."
+                               value="@item.Observacion" />
+                    </div>
+                </div>
+            }
+        }
+    }
+</div>
+
+<hr />
+<h4>Agregar productos</h4>
+<div class="d-flex overflow-auto mb-3">
+    @foreach (var cat in Model.Categorias)
+    {
+        <button class="btn btn-dark me-2" onclick="filtrar(@cat.Id)">
+            @cat.Nombre
+        </button>
+    }
+</div>
+
+<div id="productos">
+    @foreach (var cat in Model.Categorias)
+    {
+        foreach (var prod in cat.Productos)
+        {
+            if (!Model.Items.ContainsKey(prod.Id))
+            {
+                <div class="card mb-2 producto" data-cat="@cat.Id">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5>@prod.Nombre</h5>
+                            <p class="mb-0">Bs @prod.Precio</p>
+                        </div>
+                        <div class="text-center">
+                            <button onclick="cambiar(@prod.Id, -1)">-</button>
+                            <span id="cant-@prod.Id">0</span>
+                            <button onclick="cambiar(@prod.Id, 1)">+</button>
+                        </div>
+                        <input type="text"
+                               id="obs-@prod.Id"
+                               class="form-control mt-2"
+                               placeholder="observ..." />
+                    </div>
+                </div>
+            }
+        }
+    }
+</div>
+
+<hr />
+<h4>Total</h4>
+<ul id="lista"></ul>
+<h3>Total: Bs <span id="total">0</span></h3>
+<button class="btn btn-success" onclick="guardar()">Guardar Cambios</button>
+
+<script>
+    let carrito = {};
+    let precios = {};
+    let nombres = {};
+
+    const itemsGuardados = @Html.Raw(Json.Serialize(Model.Items));
+    document.querySelectorAll("[id^='cant-']").forEach(el => {
+        let id = el.id.split("-")[1];
+        let card = el.closest(".card");
+        let nombre = card.querySelector("h5").innerText;
+        let precio = card.querySelector("p").innerText.replace("Bs ", "");
+        nombres[id] = nombre;
+        precios[id] = parseFloat(precio);
+    });
+    for (let id in itemsGuardados) {
+        let item = itemsGuardados[id];
+        carrito[id] = {
+            cantidad: item.cantidad,
+            observacion: item.observacion || ""
+        };
+    }
+    render();
+
+    function filtrar(id) {
+        document.querySelectorAll(".producto").forEach(p => {
+            p.style.display = p.dataset.cat == id ? "block" : "none";
+        });
+    }
+
+    function cambiar(id, val) {
+        if (!carrito[id]) {
+            carrito[id] = { cantidad: 0, observacion: "" };
+        }
+        carrito[id].cantidad += val;
+        if (carrito[id].cantidad < 0) carrito[id].cantidad = 0;
+        carrito[id].observacion = document.getElementById("obs-" + id).value;
+        document.getElementById("cant-" + id).innerText = carrito[id].cantidad;
+        render();
+    }
+
+    function render() {
+        let lista = document.getElementById("lista");
+        lista.innerHTML = "";
+        let total = 0;
+        for (let id in carrito) {
+            let item = carrito[id];
+            if (item.cantidad > 0) {
+                let li = document.createElement("li");
+                li.innerText = nombres[id] + " x " + item.cantidad +
+                    (item.observacion ? " (" + item.observacion + ")" : "");
+                lista.appendChild(li);
+                total += item.cantidad * precios[id];
+            }
+        }
+        document.getElementById("total").innerText = total.toFixed(2);
+    }
+
+    function guardar() {
+        let itemsFiltrados = {};
+        for (let id in carrito) {
+            if (carrito[id].cantidad > 0) {
+                itemsFiltrados[id] = carrito[id];
+            }
+        }
+        if (Object.keys(itemsFiltrados).length === 0) {
+            alert("Tiene que seleccionar al menos 1 producto");
+            return;
+        }
+
+        let mesa = document.getElementById("mesa").value;
+        let comandaId = document.getElementById("comandaId").value;
+        fetch('/Comandas/EditarPedido', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                comandaId: parseInt(comandaId),
+                nroMesa: parseInt(mesa),
+                items: itemsFiltrados
+            })
+        })
+        .then(r => r.json())
+        .then(d => {
+                       alert("Pedido actualizado");
+            window.location.href = '/Comandas/Index';
+        });
+    }
+</script>

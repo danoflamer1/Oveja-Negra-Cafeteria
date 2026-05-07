@@ -1,0 +1,233 @@
+﻿@{
+    ViewData["Title"] = "Reportes";
+    string tipoReporte = Context.Request.Query["tipoReporte"].ToString();
+    if (string.IsNullOrEmpty(tipoReporte)) tipoReporte = "productos";
+}
+
+<h2 class="mb-4">Reportes</h2>
+<form method="get" class="row g-3 mb-4">
+    <div class="col-auto">
+        <label class="form-label">Desde</label>
+        <input type="date" name="desde" value="@ViewBag.Desde" class="form-control" />
+    </div>
+    <div class="col-auto">
+        <label class="form-label">Hasta</label>
+        <input type="date" name="hasta" value="@ViewBag.Hasta" class="form-control" />
+    </div>
+    <div class="col-auto">
+        <label class="form-label">Tipo de Reporte</label>
+        <select name="tipoReporte" class="form-control">
+            @{
+                var opciones = new Dictionary<string, string>
+                        {
+                        { "productos",  "Productos mas vendidos" },
+                        { "categorias", "Ventas por Categoria" },
+                        { "horas",      "Horas con mas pedidos" },
+                        { "dias",       "Dias con mas movimiento" },
+                        { "comandas",   "Comandas del periodo" }
+                        };
+
+                foreach (var op in opciones)
+                {
+                    if (op.Key == tipoReporte)
+                    {
+                        <option value="@op.Key" selected>@op.Value</option>
+                    }
+                    else
+                    {
+                        <option value="@op.Key">@op.Value</option>
+                    }
+                }
+            }
+        </select>
+    </div>
+    <div class="col-auto align-self-end">
+        <button type="submit" class="btn btn-primary">Filtrar</button>
+    </div>
+    <div class="col-auto align-self-end">
+        <a href="/Reportes/ExportarExcel?desde=@ViewBag.Desde&hasta=@ViewBag.Hasta&tipoReporte=@tipoReporte"
+           class="btn btn-success">Excel</a>
+        <a href="/Reportes/ExportarPDF?desde=@ViewBag.Desde&hasta=@ViewBag.Hasta&tipoReporte=@tipoReporte"
+           class="btn btn-danger">PDF</a>
+    </div>
+</form>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <h5 class="card-title">Total Comandas</h5>
+                <h2>@ViewBag.TotalComandas</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h5 class="card-title">Total Recaudado</h5>
+                <h2>Bs @(((decimal)ViewBag.TotalRecaudado).ToString("0.00"))</h2>
+            </div>
+        </div>
+    </div>
+</div>
+@if (tipoReporte == "productos")
+{
+    <h4 class="mt-4">Productos mas vendidos</h4>
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>#</th>
+                <th>Producto</th>
+                <th>Cantidad vendida</th>
+                <th>Total (Bs)</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{ int i = 1; }
+            @foreach (var p in ViewBag.ProductosMasVendidos)
+            {
+                <tr>
+                    <td>@i</td>
+                    <td>@p.Nombre</td>
+                    <td>@p.Cantidad</td>
+                    <td>Bs @p.Total.ToString("0.00")</td>
+                </tr>
+                i++;
+            }
+        </tbody>
+    </table>
+}
+
+@if (tipoReporte == "categorias")
+{
+    <h4 class="mt-4">Ventas por Categoria</h4>
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Categoria</th>
+                <th>Cantidad vendida</th>
+                <th>Total (Bs)</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in ViewBag.VentasPorCategoria)
+            {
+                <tr>
+                    <td>@c.Categoria</td>
+                    <td>@c.Cantidad</td>
+                    <td>Bs @c.Total.ToString("0.00")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+@if (tipoReporte == "horas")
+{
+    <h4 class="mt-4">Horas con mas pedidos</h4>
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Hora</th>
+                <th>Total Comandas</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var h in ViewBag.HorasPico)
+            {
+                <tr>
+                    <td>@h.Hora:00 - @(h.Hora + 1):00</td>
+                    <td>@h.TotalComandas</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+@if (tipoReporte == "dias")
+{
+    <h4 class="mt-4">Dias con mas movimiento</h4>
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Dia</th>
+                <th>Total Comandas</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var d in ViewBag.DiasSemana)
+            {
+                <tr>
+                    <td>
+                        @{
+                            switch ((int)d.Dia)
+                            {
+                                case 0:
+                                    @:Domingo
+                                    break;
+                                case 1:
+                                    @:Lunes
+                                    break;
+                                case 2:
+                                    @:Martes
+                                    break;
+                                case 3:
+                                    @:Miércoles
+                                    break;
+                                case 4:
+                                    @:Jueves
+                                    break;
+                                case 5:
+                                    @:Viernes
+                                    break;
+                                case 6:
+                                    @:Sábado
+                                    break;
+                            }
+                        }
+                    </td>
+                    <td>@d.TotalComandas</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+@if (tipoReporte == "comandas")
+{
+    <h4 class="mt-4">Comandas del periodo</h4>
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>#</th>
+                <th>Fecha</th>
+                <th>Mesa</th>
+                <th>Mesero</th>
+                <th>Estado</th>
+                <th>Productos</th>
+                <th>Total (Bs)</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{ int j = 1; }
+            @foreach (var c in ViewBag.Comandas)
+            {
+                <tr>
+                    <td>@j</td>
+                    <td>@c.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>Mesa @c.Nro_Mesa</td>
+                    <td>@c.Usuario.Nombre @c.Usuario.Apellido</td>
+                    <td>@c.Estado</td>
+                    <td>
+                        <ul class="mb-0">
+                            @foreach (var d in c.DetallesComanda)
+                            {
+                                var detalle = (OvejaNegra.Models.DetalleComanda)d;
+                                <li>@detalle.Producto.Nombre x@(detalle.Cantidad)</li>
+                            }
+                        </ul>
+                    </td>
+                    <td>Bs @(((IEnumerable<OvejaNegra.Models.DetalleComanda>)c.DetallesComanda).Sum(d => d.Cantidad * d.Precio_unitario).ToString("0.00"))</td>
+                </tr>
+                j++;
+            }
+        </tbody>
+    </table>
+}
