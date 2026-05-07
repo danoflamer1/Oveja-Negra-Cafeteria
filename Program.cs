@@ -88,6 +88,7 @@ using (var scope = app.Services.CreateScope())
         );
         context.SaveChanges();
     }
+
     if (!context.Productoss.Any())
     {
         var destilados = context.Categorias.First(c => c.Nombre == "Destilados Artesanales").Id;
@@ -97,7 +98,7 @@ using (var scope = app.Services.CreateScope())
         var milkshakes = context.Categorias.First(c => c.Nombre == "Milkshakes").Id;
         var jugos = context.Categorias.First(c => c.Nombre == "Jugos de Fruta").Id;
         var frappuccinos = context.Categorias.First(c => c.Nombre == "Frappuccinos").Id;
-        var sandwiches = context.Categorias.First(c => c.Nombre == "Sándwiches").Id;
+        var sandwiches = context.Categorias.First(c => c.Nombre == "Sandwiches").Id;
         var pizzas = context.Categorias.First(c => c.Nombre == "Pizzas").Id;
 
         context.Productoss.AddRange(
@@ -107,24 +108,24 @@ using (var scope = app.Services.CreateScope())
             new Producto { Nombre = "Cocktail de Singani", Precio = 30.00m, Disponible = true, Descripcion = "Cocktail preparado con singani y frutas", CategoriaId = destilados },
             new Producto { Nombre = "Licor de Cafe", Precio = 28.00m, Disponible = true, Descripcion = "Licor artesanal con base de cafe", CategoriaId = destilados },
 
-            // Cafés
-            new Producto { Nombre = "Café Americano", Precio = 12.00m, Disponible = true, Descripcion = "Café negro suave y aromatico", CategoriaId = cafes },
-            new Producto { Nombre = "Café Espresso", Precio = 10.00m, Disponible = true, Descripcion = "Espresso concentrado de grano selecto", CategoriaId = cafes },
+            // Cafes
+            new Producto { Nombre = "Cafe Americano", Precio = 12.00m, Disponible = true, Descripcion = "Cafe negro suave y aromatico", CategoriaId = cafes },
+            new Producto { Nombre = "Cafe Espresso", Precio = 10.00m, Disponible = true, Descripcion = "Espresso concentrado de grano selecto", CategoriaId = cafes },
             new Producto { Nombre = "Cappuccino", Precio = 15.00m, Disponible = true, Descripcion = "Espresso con leche vaporizada y espuma", CategoriaId = cafes },
             new Producto { Nombre = "Latte", Precio = 16.00m, Disponible = true, Descripcion = "Cafe suave con abundante leche cremosa", CategoriaId = cafes },
             new Producto { Nombre = "Macchiato", Precio = 14.00m, Disponible = true, Descripcion = "Espresso con toque de leche vaporizada", CategoriaId = cafes },
 
-            // Bebidas Calientes sin Café
+            // Bebidas Calientes sin Cafe
             new Producto { Nombre = "Chocolate Caliente", Precio = 14.00m, Disponible = true, Descripcion = "Chocolate cremoso con leche caliente", CategoriaId = calientes },
             new Producto { Nombre = "Te de Manzanilla", Precio = 10.00m, Disponible = true, Descripcion = "Infusion relajante de manzanilla", CategoriaId = calientes },
             new Producto { Nombre = "Te Verde", Precio = 10.00m, Disponible = true, Descripcion = "Te verde antioxidante importado", CategoriaId = calientes },
             new Producto { Nombre = "Leche con Toddy", Precio = 12.00m, Disponible = true, Descripcion = "Leche caliente con Toddy", CategoriaId = calientes },
 
-            // Bebidas Frías
+            // Bebidas Frias
             new Producto { Nombre = "Aquarius", Precio = 8.00m, Disponible = true, Descripcion = "Aquarius 500ml", CategoriaId = frias },
             new Producto { Nombre = "Coca cola", Precio = 10.00m, Disponible = true, Descripcion = "Coca Cola en botella", CategoriaId = frias },
             new Producto { Nombre = "Limonada", Precio = 12.00m, Disponible = true, Descripcion = "Limonada fresca con hierbabuena", CategoriaId = frias },
-            new Producto { Nombre = "Te Frio", Precio = 12.00m, Disponible = true, Descripcion = "Te frío con hielo", CategoriaId = frias },
+            new Producto { Nombre = "Te Frio", Precio = 12.00m, Disponible = true, Descripcion = "Te frio con hielo", CategoriaId = frias },
 
             // Milkshakes
             new Producto { Nombre = "Milkshake de Fresa", Precio = 20.00m, Disponible = true, Descripcion = "Batido cremoso de fresa con helado", CategoriaId = milkshakes },
@@ -135,27 +136,28 @@ using (var scope = app.Services.CreateScope())
             // Jugos de Fruta
             new Producto { Nombre = "Jugo de Naranja", Precio = 14.00m, Disponible = true, Descripcion = "Jugo natural de naranja recien exprimido", CategoriaId = jugos },
             new Producto { Nombre = "Jugo de Mango", Precio = 14.00m, Disponible = true, Descripcion = "Jugo natural de mango de temporada", CategoriaId = jugos },
-            new Producto { Nombre = "Jugo de Maracuyá", Precio = 14.00m, Disponible = true, Descripcion = "Jugo tropical de maracuya con azucar", CategoriaId = jugos },
+            new Producto { Nombre = "Jugo de Maracuya", Precio = 14.00m, Disponible = true, Descripcion = "Jugo tropical de maracuya con azucar", CategoriaId = jugos },
             new Producto { Nombre = "Jugo Mixto", Precio = 16.00m, Disponible = true, Descripcion = "Mezcla de frutas de temporada", CategoriaId = jugos },
 
             // Frappuccinos
-            new Producto { Nombre = "Frappuccino de Cafe", Precio = 22.00m, Disponible = true, Descripcion = "Cafe frío batido con hielo y crema", CategoriaId = frappuccinos },
+            new Producto { Nombre = "Frappuccino de Cafe", Precio = 22.00m, Disponible = true, Descripcion = "Cafe frio batido con hielo y crema", CategoriaId = frappuccinos },
             new Producto { Nombre = "Frappuccino de Caramelo", Precio = 24.00m, Disponible = true, Descripcion = "Frappuccino con salsa de caramelo", CategoriaId = frappuccinos },
-            new Producto { Nombre = "Frappuccino de Moca", Precio = 24.00m, Disponible = true, Descripcion = "Frappuccino de café con chocolate", CategoriaId = frappuccinos },
+            new Producto { Nombre = "Frappuccino de Moca", Precio = 24.00m, Disponible = true, Descripcion = "Frappuccino de cafe con chocolate", CategoriaId = frappuccinos },
             new Producto { Nombre = "Frappuccino de Vainilla", Precio = 22.00m, Disponible = true, Descripcion = "Frappuccino cremoso sabor vainilla", CategoriaId = frappuccinos },
 
-            // Sándwiches
-            new Producto { Nombre = "Sándwich de Pollo", Precio = 25.00m, Disponible = true, Descripcion = "Sándwich de pollo a la plancha con lechuga", CategoriaId = sandwiches },
-            new Producto { Nombre = "Sándwich Mixto", Precio = 22.00m, Disponible = true, Descripcion = "Jamón, queso y tomate en pan tostado", CategoriaId = sandwiches },
-            new Producto { Nombre = "Sándwich Vegetal", Precio = 20.00m, Disponible = true, Descripcion = "Verduras frescas con queso crema", CategoriaId = sandwiches },
+            // Sandwiches
+            new Producto { Nombre = "Sandwich de Pollo", Precio = 25.00m, Disponible = true, Descripcion = "Sandwich de pollo a la plancha con lechuga", CategoriaId = sandwiches },
+            new Producto { Nombre = "Sandwich Mixto", Precio = 22.00m, Disponible = true, Descripcion = "Jamon, queso y tomate en pan tostado", CategoriaId = sandwiches },
+            new Producto { Nombre = "Sandwich Vegetal", Precio = 20.00m, Disponible = true, Descripcion = "Verduras frescas con queso crema", CategoriaId = sandwiches },
             new Producto { Nombre = "Sandwich Neto", Precio = 28.00m, Disponible = true, Descripcion = "Triple capa con pollo, tocino y huevo", CategoriaId = sandwiches },
 
             // Pizzas
             new Producto { Nombre = "Pizza Margherita", Precio = 45.00m, Disponible = true, Descripcion = "Salsa de tomate, mozzarella y albahaca", CategoriaId = pizzas },
-            new Producto { Nombre = "Pizza de Pepperoni", Precio = 50.00m, Disponible = true, Descripcion = "Pizza clásica con pepperoni y queso", CategoriaId = pizzas },
-            new Producto { Nombre = "Pizza Vegetariana", Precio = 48.00m, Disponible = true, Descripcion = "Pimientos, champiñones, aceitunas y queso", CategoriaId = pizzas },
+            new Producto { Nombre = "Pizza de Pepperoni", Precio = 50.00m, Disponible = true, Descripcion = "Pizza clasica con pepperoni y queso", CategoriaId = pizzas },
+            new Producto { Nombre = "Pizza Vegetariana", Precio = 48.00m, Disponible = true, Descripcion = "Pimientos, champinones, aceitunas y queso", CategoriaId = pizzas },
             new Producto { Nombre = "Pizza de Charque", Precio = 52.00m, Disponible = true, Descripcion = "Charque con pimenton", CategoriaId = pizzas }
         );
+
         context.SaveChanges();
     }
 }
