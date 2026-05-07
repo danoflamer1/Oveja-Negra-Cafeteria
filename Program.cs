@@ -8,14 +8,16 @@ using OvejaNegra.Dtos;
 using OvejaNegra.Models;
 
 var builder = WebApplication.CreateBuilder(args);
-var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL");
+var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
+    ?? builder.Configuration.GetConnectionString("CadenaConexion");
 
-if (string.IsNullOrEmpty(connectionString))
+if (connectionString != null && connectionString.StartsWith("postgresql://"))
 {
-    connectionString = builder.Configuration.GetConnectionString("CadenaConexion");
+    var uri = new Uri(connectionString);
+    connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={uri.UserInfo.Split(':')[0]};Password={uri.UserInfo.Split(':')[1]}";
 }
 
-Console.WriteLine($"CONNECTION: {connectionString}");
+Console.WriteLine($"CONNECTION: {connectionString?.Substring(0, 30)}");
 
 builder.Services.AddDbContext<MiContext>(options =>
     options.UseNpgsql(connectionString));
