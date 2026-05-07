@@ -8,10 +8,17 @@ using OvejaNegra.Dtos;
 using OvejaNegra.Models;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddDbContext<MiContext>(options => {
+var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL");
 
-    options.UseNpgsql(builder.Configuration.GetConnectionString("CadenaConexion"));
-});
+if (string.IsNullOrEmpty(connectionString))
+{
+    connectionString = builder.Configuration.GetConnectionString("CadenaConexion");
+}
+
+Console.WriteLine($"CONNECTION: {connectionString}");
+
+builder.Services.AddDbContext<MiContext>(options =>
+    options.UseNpgsql(connectionString));
 builder.Services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
 
 // Add services to the container.
@@ -25,6 +32,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         option.ExpireTimeSpan = TimeSpan.FromMinutes(30);
         option.AccessDeniedPath = "/Home/Index";
     });
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 var app = builder.Build();
 using (var scope = app.Services.CreateScope())
