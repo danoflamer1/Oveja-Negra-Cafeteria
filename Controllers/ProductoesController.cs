@@ -10,7 +10,8 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
 using System.Threading.Tasks;
-
+using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
 namespace OvejaNegra.Controllers
 {
     [Authorize(Roles = "Administrador,Cajero,Mesero")]
