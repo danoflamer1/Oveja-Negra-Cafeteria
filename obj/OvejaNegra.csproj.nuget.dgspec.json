@@ -58,6 +58,10 @@
               "target": "Package",
               "version": "[0.105.0, )"
             },
+            "CloudinaryDotNet": {
+              "target": "Package",
+              "version": "[1.29.1, )"
+            },
             "DinkToPdf": {
               "target": "Package",
               "version": "[1.0.8, )"

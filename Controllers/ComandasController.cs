@@ -117,8 +117,9 @@ namespace OvejaNegra.Controllers
         public IActionResult Create()
         {
             var categorias = _context.Categorias
-            .Include(c => c.Productos)
-            .ToList();
+                .Include(c => c.Productos.Where(p => p.Disponible))
+                .Where(c => c.Productos.Any(p => p.Disponible))
+                .ToList();
 
             var vm = new CrearComandaVM
             {
@@ -180,7 +181,8 @@ namespace OvejaNegra.Controllers
             if (comanda == null) return NotFound();
 
             var categorias = await _context.Categorias
-                .Include(c => c.Productos)
+                .Include(c => c.Productos.Where(p => p.Disponible))
+                .Where(c => c.Productos.Any(p => p.Disponible))
                 .ToListAsync();
 
             var vm = new EditarComandaVM

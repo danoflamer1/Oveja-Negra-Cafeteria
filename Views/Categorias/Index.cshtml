@@ -1,36 +1,56 @@
 ﻿@model IEnumerable<OvejaNegra.Models.Categoria>
-
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Categorías";
 }
 
-<h1>Lista Categorias</h1>
+<div class="container mt-4">
 
-<p>
-    <a asp-action="Create">Añadir Categoria</a>
-</p>
+    <div class="page-header">
+        <div>
+            <div class="title">Gestión de Categorías</div>
+            <div class="subtitle">Administra las categorías del menú</div>
+        </div>
+        <a asp-action="Create" class="btn-add">
+            <i class="bi bi-plus-lg"></i>
+            Añadir Categoría
+        </a>
+    </div>
 
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Nombre)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Nombre)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Editar</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Detalles</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-            </td>
-        </tr>
-}
-    </tbody>
-</table>
+    <div class="table-card">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>
+                            <span class="categoria-badge">
+                                <i></i> @item.Nombre
+                            </span>
+                        </td>
+                        <td>
+                            <div class="acciones">
+                                <a asp-action="Edit"
+                                   asp-route-id="@item.Id"
+                                   class="editar">
+                                    <i class="bi bi-pencil-square"></i>
+                                </a>
+                                <a asp-action="Delete"
+                                   asp-route-id="@item.Id"
+                                   class="eliminar">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+</div>

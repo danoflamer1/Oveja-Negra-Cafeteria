@@ -56,8 +56,8 @@
     <div class="col-md-4">
         <div class="card text-white bg-primary">
             <div class="card-body">
-                <h5 class="card-title">Total Comandas</h5>
-                <h2>@ViewBag.TotalComandas</h2>
+                <h5 class="card-title">Total Ventas</h5>
+                <h5>@ViewBag.TotalComandas</h5>
             </div>
         </div>
     </div>
@@ -65,7 +65,7 @@
         <div class="card text-white bg-success">
             <div class="card-body">
                 <h5 class="card-title">Total Recaudado</h5>
-                <h2>Bs @(((decimal)ViewBag.TotalRecaudado).ToString("0.00"))</h2>
+                <h5>Bs @(((decimal)ViewBag.TotalRecaudado).ToString("0.00"))</h5>
             </div>
         </div>
     </div>
@@ -192,12 +192,12 @@
 }
 @if (tipoReporte == "comandas")
 {
-    <h4 class="mt-4">Comandas del periodo</h4>
+    <h4 class="mt-4">Ventas del periodo</h4>
     <table class="table table-striped table-hover">
         <thead class="table-dark">
             <tr>
                 <th>#</th>
-                <th>Fecha</th>
+                <th>Fecha Venta</th>
                 <th>Mesa</th>
                 <th>Mesero</th>
                 <th>Estado</th>
@@ -206,12 +206,14 @@
             </tr>
         </thead>
         <tbody>
-            @{ int j = 1; }
+            @{
+                int j = 1;
+            }
             @foreach (var c in ViewBag.Comandas)
             {
                 <tr>
                     <td>@j</td>
-                    <td>@c.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@c.Venta.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
                     <td>Mesa @c.Nro_Mesa</td>
                     <td>@c.Usuario.Nombre @c.Usuario.Apellido</td>
                     <td>@c.Estado</td>
@@ -224,7 +226,7 @@
                             }
                         </ul>
                     </td>
-                    <td>Bs @(((IEnumerable<OvejaNegra.Models.DetalleComanda>)c.DetallesComanda).Sum(d => d.Cantidad * d.Precio_unitario).ToString("0.00"))</td>
+                    <td>Bs @c.Venta.Total.ToString("0.00")</td>
                 </tr>
                 j++;
             }

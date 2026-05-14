@@ -7,6 +7,7 @@ using OvejaNegra.Context;
 using OvejaNegra.Models;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -15,12 +16,14 @@ namespace OvejaNegra.Controllers
     [Authorize(Roles = "Administrador,Cajero,Mesero")]
     public class ProductoesController : Controller
     {
+        private readonly IConfiguration _configuration;
         private readonly MiContext _context;
         private readonly IWebHostEnvironment _webHostEnvironment;
-        public ProductoesController(MiContext context, IWebHostEnvironment webHostEnvironment)
+        public ProductoesController(MiContext context, IWebHostEnvironment webHostEnvironment, IConfiguration configuration)
         {
             _context = context;
             _webHostEnvironment = webHostEnvironment;
+            _configuration = configuration;
         }
 
         // GET: Productoes
@@ -106,7 +109,7 @@ namespace OvejaNegra.Controllers
             {
                 try
                 {
-                    if(producto.ImagenFile != null)
+                    if (producto.ImagenFile != null)
                     {
                         await subirFoto(producto);
                     }
@@ -132,15 +135,24 @@ namespace OvejaNegra.Controllers
 
         private async Task subirFoto(Producto producto)
         {
-            string wwRootPath = _webHostEnvironment.WebRootPath;
-            string extension = Path.GetExtension(producto.ImagenFile!.FileName);
-            string nombreImagen = $"{producto.Id}{extension}";
+            var cloudName = _configuration["Cloudinary:CloudName"];
+            var apiKey = _configuration["Cloudinary:ApiKey"];
+            var apiSecret = _configuration["Cloudinary:ApiSecret"];
 
-            producto.Imagen = nombreImagen;
+            var account = new CloudinaryDotNet.Account(cloudName, apiKey, apiSecret);
+            var cloudinary = new CloudinaryDotNet.Cloudinary(account);
 
-            string path = Path.Combine($"{wwRootPath}/imagenes/", nombreImagen);
-            var fileStream = new FileStream(path, FileMode.Create);
-            await producto.ImagenFile.CopyToAsync(fileStream);
+            using var stream = producto.ImagenFile!.OpenReadStream();
+
+            var uploadParams = new CloudinaryDotNet.Actions.ImageUploadParams
+            {
+                File = new CloudinaryDotNet.FileDescription(producto.ImagenFile.FileName, stream),
+                PublicId = $"ovejaNegra/productos/{producto.Id}",
+                Overwrite = true
+            };
+
+            var result = await cloudinary.UploadAsync(uploadParams);
+            producto.Imagen = result.SecureUrl.ToString();
         }
 
 

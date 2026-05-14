@@ -19,7 +19,7 @@ namespace OvejaNegra.Controllers
             _context = context;
             _converter = converter;
         }
-        public async Task<IActionResult> Index(DateTime? desde, DateTime? hasta)
+        public async Task<IActionResult> Index(DateTime? desde, DateTime? hasta, string tipoReporte = "productos")
         {
             desde ??= DateTime.Now.AddMonths(-1);
             hasta ??= DateTime.Now;
@@ -29,19 +29,20 @@ namespace OvejaNegra.Controllers
             ViewBag.Desde = desdeInicio.ToString("yyyy-MM-dd");
             ViewBag.Hasta = hasta.Value.ToString("yyyy-MM-dd");
 
-            ViewBag.TotalComandas = await _context.Comandas
-                .Where(c => c.Fecha >= desdeInicio && c.Fecha <= hastaFin)
+            ViewBag.TotalComandas = await _context.Ventas
+                .Where(v => v.Fecha >= desdeInicio && v.Fecha <= hastaFin)
                 .CountAsync();
 
-            ViewBag.TotalRecaudado = await _context.DetalleComandas
-                .Include(d => d.Comanda)
-                .Where(d => d.Comanda.Fecha >= desdeInicio && d.Comanda.Fecha <= hastaFin)
-                .SumAsync(d => d.Cantidad * d.Precio_unitario);
+            ViewBag.TotalRecaudado = await _context.Ventas
+                .Where(v => v.Fecha >= desdeInicio && v.Fecha <= hastaFin)
+                .SumAsync(v => v.Total);
 
             ViewBag.ProductosMasVendidos = await _context.DetalleComandas
-                .Include(d => d.Comanda)
+                .Include(d => d.Comanda).ThenInclude(c => c.Venta)
                 .Include(d => d.Producto)
-                .Where(d => d.Comanda.Fecha >= desdeInicio && d.Comanda.Fecha <= hastaFin)
+                .Where(d => d.Comanda.Venta != null &&
+                            d.Comanda.Venta.Fecha >= desdeInicio &&
+                            d.Comanda.Venta.Fecha <= hastaFin)
                 .GroupBy(d => new { d.ProductoId, d.Producto.Nombre })
                 .Select(g => new
                 {
@@ -54,9 +55,11 @@ namespace OvejaNegra.Controllers
                 .ToListAsync();
 
             ViewBag.VentasPorCategoria = await _context.DetalleComandas
-                .Include(d => d.Comanda)
+                .Include(d => d.Comanda).ThenInclude(c => c.Venta)
                 .Include(d => d.Producto).ThenInclude(p => p.Categoria)
-                .Where(d => d.Comanda.Fecha >= desdeInicio && d.Comanda.Fecha <= hastaFin)
+                .Where(d => d.Comanda.Venta != null &&
+                            d.Comanda.Venta.Fecha >= desdeInicio &&
+                            d.Comanda.Venta.Fecha <= hastaFin)
                 .GroupBy(d => new { d.Producto.CategoriaId, d.Producto.Categoria.Nombre })
                 .Select(g => new
                 {
@@ -67,26 +70,28 @@ namespace OvejaNegra.Controllers
                 .OrderByDescending(c => c.Total)
                 .ToListAsync();
 
-            var todasComandas = await _context.Comandas
-                .Where(c => c.Fecha >= desdeInicio && c.Fecha <= hastaFin)
+            var todasVentas = await _context.Ventas
+                .Where(v => v.Fecha >= desdeInicio && v.Fecha <= hastaFin)
                 .ToListAsync();
 
-            ViewBag.HorasPico = todasComandas
-                .GroupBy(c => c.Fecha.Hour)
+            ViewBag.HorasPico = todasVentas
+                .GroupBy(v => v.Fecha.Hour)
                 .Select(g => new { Hora = g.Key, TotalComandas = g.Count() })
                 .OrderByDescending(h => h.TotalComandas)
                 .ToList();
 
-            ViewBag.DiasSemana = todasComandas
-                .GroupBy(c => c.Fecha.DayOfWeek)
+            ViewBag.DiasSemana = todasVentas
+                .GroupBy(v => v.Fecha.DayOfWeek)
                 .Select(g => new { Dia = g.Key, TotalComandas = g.Count() })
                 .OrderByDescending(d => d.TotalComandas)
                 .ToList();
-            ViewBag.Comandas = await _context.Comandas
-                .Include(c => c.Usuario)
-                .Include(c => c.DetallesComanda).ThenInclude(d => d.Producto)
-                .Where(c => c.Fecha >= desdeInicio && c.Fecha <= hastaFin)
-                .OrderByDescending(c => c.Fecha)
+
+            ViewBag.Comandas = await _context.Ventas
+                .Include(v => v.Comanda).ThenInclude(c => c.Usuario)
+                .Include(v => v.Comanda).ThenInclude(c => c.DetallesComanda).ThenInclude(d => d.Producto)
+                .Where(v => v.Fecha >= desdeInicio && v.Fecha <= hastaFin)
+                .OrderByDescending(v => v.Fecha)
+                .Select(v => v.Comanda)
                 .ToListAsync();
 
             return View();
@@ -101,11 +106,20 @@ namespace OvejaNegra.Controllers
             if (tipoReporte == "productos")
             {
                 var productos = await _context.DetalleComandas
-                    .Include(d => d.Comanda).Include(d => d.Producto)
-                    .Where(d => d.Comanda.Fecha >= desdeInicio && d.Comanda.Fecha <= hastaFin)
+                    .Include(d => d.Comanda).ThenInclude(c => c.Venta)
+                    .Include(d => d.Producto)
+                    .Where(d => d.Comanda.Venta != null &&
+                                d.Comanda.Venta.Fecha >= desdeInicio &&
+                                d.Comanda.Venta.Fecha <= hastaFin)
                     .GroupBy(d => new { d.ProductoId, d.Producto.Nombre })
-                    .Select(g => new { Nombre = g.Key.Nombre, Cantidad = g.Sum(d => d.Cantidad), Total = g.Sum(d => d.Cantidad * d.Precio_unitario) })
-                    .OrderByDescending(p => p.Cantidad).ToListAsync();
+                    .Select(g => new
+                    {
+                        Nombre = g.Key.Nombre,
+                        Cantidad = g.Sum(d => d.Cantidad),
+                        Total = g.Sum(d => d.Cantidad * d.Precio_unitario)
+                    })
+                    .OrderByDescending(p => p.Cantidad)
+                    .ToListAsync();
 
                 var hoja = workbook.Worksheets.Add("Productos mas vendidos");
                 hoja.Cell(1, 1).Value = "Producto";
@@ -123,11 +137,20 @@ namespace OvejaNegra.Controllers
             else if (tipoReporte == "categorias")
             {
                 var categorias = await _context.DetalleComandas
-                    .Include(d => d.Comanda).Include(d => d.Producto).ThenInclude(p => p.Categoria)
-                    .Where(d => d.Comanda.Fecha >= desdeInicio && d.Comanda.Fecha <= hastaFin)
+                    .Include(d => d.Comanda).ThenInclude(c => c.Venta)
+                    .Include(d => d.Producto).ThenInclude(p => p.Categoria)
+                    .Where(d => d.Comanda.Venta != null &&
+                                d.Comanda.Venta.Fecha >= desdeInicio &&
+                                d.Comanda.Venta.Fecha <= hastaFin)
                     .GroupBy(d => new { d.Producto.CategoriaId, d.Producto.Categoria.Nombre })
-                    .Select(g => new { Categoria = g.Key.Nombre, Cantidad = g.Sum(d => d.Cantidad), Total = g.Sum(d => d.Cantidad * d.Precio_unitario) })
-                    .OrderByDescending(c => c.Total).ToListAsync();
+                    .Select(g => new
+                    {
+                        Categoria = g.Key.Nombre,
+                        Cantidad = g.Sum(d => d.Cantidad),
+                        Total = g.Sum(d => d.Cantidad * d.Precio_unitario)
+                    })
+                    .OrderByDescending(c => c.Total)
+                    .ToListAsync();
 
                 var hoja = workbook.Worksheets.Add("Ventas por Categoria");
                 hoja.Cell(1, 1).Value = "Categoria";
@@ -144,14 +167,15 @@ namespace OvejaNegra.Controllers
             }
             else if (tipoReporte == "horas")
             {
-                var comandas = await _context.Comandas
-                    .Where(c => c.Fecha >= desdeInicio && c.Fecha <= hastaFin).ToListAsync();
+                var ventas = await _context.Ventas
+                    .Where(v => v.Fecha >= desdeInicio && v.Fecha <= hastaFin)
+                    .ToListAsync();
 
                 var hoja = workbook.Worksheets.Add("Horas Pico");
                 hoja.Cell(1, 1).Value = "Hora";
-                hoja.Cell(1, 2).Value = "Total Comandas";
+                hoja.Cell(1, 2).Value = "Total Ventas";
                 hoja.Row(1).Style.Font.Bold = true;
-                var horasPico = comandas.GroupBy(c => c.Fecha.Hour)
+                var horasPico = ventas.GroupBy(v => v.Fecha.Hour)
                     .Select(g => new { Hora = g.Key, Total = g.Count() })
                     .OrderByDescending(h => h.Total).ToList();
                 for (int i = 0; i < horasPico.Count; i++)
@@ -163,15 +187,16 @@ namespace OvejaNegra.Controllers
             }
             else if (tipoReporte == "dias")
             {
-                var comandas = await _context.Comandas
-                    .Where(c => c.Fecha >= desdeInicio && c.Fecha <= hastaFin).ToListAsync();
+                var ventas = await _context.Ventas
+                    .Where(v => v.Fecha >= desdeInicio && v.Fecha <= hastaFin)
+                    .ToListAsync();
 
                 var hoja = workbook.Worksheets.Add("Dias con mas movimiento");
                 hoja.Cell(1, 1).Value = "Dia";
-                hoja.Cell(1, 2).Value = "Total Comandas";
+                hoja.Cell(1, 2).Value = "Total Ventas";
                 hoja.Row(1).Style.Font.Bold = true;
                 var dias = new[] { "Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado" };
-                var diasSemana = comandas.GroupBy(c => c.Fecha.DayOfWeek)
+                var diasSemana = ventas.GroupBy(v => v.Fecha.DayOfWeek)
                     .Select(g => new { Dia = dias[(int)g.Key], Total = g.Count() })
                     .OrderByDescending(d => d.Total).ToList();
                 for (int i = 0; i < diasSemana.Count; i++)
@@ -183,31 +208,37 @@ namespace OvejaNegra.Controllers
             }
             else if (tipoReporte == "comandas")
             {
-                var comandas = await _context.Comandas
-                    .Include(c => c.Usuario)
-                    .Include(c => c.DetallesComanda).ThenInclude(d => d.Producto)
-                    .Where(c => c.Fecha >= desdeInicio && c.Fecha <= hastaFin)
-                    .OrderByDescending(c => c.Fecha).ToListAsync();
+                var ventas = await _context.Ventas
+                    .Include(v => v.Cliente)
+                    .Include(v => v.Comanda).ThenInclude(c => c.Usuario)
+                    .Include(v => v.Comanda).ThenInclude(c => c.DetallesComanda).ThenInclude(d => d.Producto)
+                    .Where(v => v.Fecha >= desdeInicio && v.Fecha <= hastaFin)
+                    .OrderByDescending(v => v.Fecha)
+                    .ToListAsync();
 
-                var hoja = workbook.Worksheets.Add("Comandas del periodo");
+                var hoja = workbook.Worksheets.Add("Ventas del periodo");
                 hoja.Cell(1, 1).Value = "Fecha";
                 hoja.Cell(1, 2).Value = "Mesa";
                 hoja.Cell(1, 3).Value = "Mesero";
-                hoja.Cell(1, 4).Value = "Estado";
-                hoja.Cell(1, 5).Value = "Productos";
-                hoja.Cell(1, 6).Value = "Total (Bs)";
+                hoja.Cell(1, 4).Value = "Cliente";
+                hoja.Cell(1, 5).Value = "NIT/CI";
+                hoja.Cell(1, 6).Value = "Metodo de Pago";
+                hoja.Cell(1, 7).Value = "Productos";
+                hoja.Cell(1, 8).Value = "Total (Bs)";
                 hoja.Row(1).Style.Font.Bold = true;
-                for (int i = 0; i < comandas.Count; i++)
+
+                for (int i = 0; i < ventas.Count; i++)
                 {
-                    var c = comandas[i];
-                    var prods = string.Join(", ", c.DetallesComanda.Select(d => $"{d.Producto.Nombre} x{d.Cantidad}"));
-                    var total = c.DetallesComanda.Sum(d => d.Cantidad * d.Precio_unitario);
-                    hoja.Cell(i + 2, 1).Value = c.Fecha.ToString("dd/MM/yyyy HH:mm");
-                    hoja.Cell(i + 2, 2).Value = $"Mesa {c.Nro_Mesa}";
-                    hoja.Cell(i + 2, 3).Value = $"{c.Usuario.Nombre} {c.Usuario.Apellido}";
-                    hoja.Cell(i + 2, 4).Value = c.Estado.ToString();
-                    hoja.Cell(i + 2, 5).Value = prods;
-                    hoja.Cell(i + 2, 6).Value = total;
+                    var v = ventas[i];
+                    var prods = string.Join(", ", v.Comanda.DetallesComanda.Select(d => $"{d.Producto.Nombre} x{d.Cantidad}"));
+                    hoja.Cell(i + 2, 1).Value = v.Fecha.ToString("dd/MM/yyyy HH:mm");
+                    hoja.Cell(i + 2, 2).Value = $"Mesa {v.Comanda.Nro_Mesa}";
+                    hoja.Cell(i + 2, 3).Value = $"{v.Comanda.Usuario.Nombre} {v.Comanda.Usuario.Apellido}";
+                    hoja.Cell(i + 2, 4).Value = v.Cliente != null ? v.Cliente.Nombre : "Sin cliente";
+                    hoja.Cell(i + 2, 5).Value = v.Cliente != null ? v.Cliente.NITCI : "-";
+                    hoja.Cell(i + 2, 6).Value = v.MetodoPago.ToString();
+                    hoja.Cell(i + 2, 7).Value = prods;
+                    hoja.Cell(i + 2, 8).Value = v.Total;
                 }
                 hoja.Columns().AdjustToContents();
             }
@@ -224,10 +255,9 @@ namespace OvejaNegra.Controllers
             var desdeInicio = desde.Date;
             var hastaFin = hasta.Date.AddDays(1).AddTicks(-1);
 
-            var totalRecaudado = await _context.DetalleComandas
-                .Include(d => d.Comanda)
-                .Where(d => d.Comanda.Fecha >= desdeInicio && d.Comanda.Fecha <= hastaFin)
-                .SumAsync(d => d.Cantidad * d.Precio_unitario);
+            var totalRecaudado = await _context.Ventas
+                .Where(v => v.Fecha >= desdeInicio && v.Fecha <= hastaFin)
+                .SumAsync(v => v.Total);
 
             string cuerpoHtml = "";
             string tituloReporte = "";
@@ -236,118 +266,146 @@ namespace OvejaNegra.Controllers
             {
                 tituloReporte = "Productos mas vendidos";
                 var productos = await _context.DetalleComandas
-                    .Include(d => d.Comanda).Include(d => d.Producto)
-                    .Where(d => d.Comanda.Fecha >= desdeInicio && d.Comanda.Fecha <= hastaFin)
+                    .Include(d => d.Comanda).ThenInclude(c => c.Venta)
+                    .Include(d => d.Producto)
+                    .Where(d => d.Comanda.Venta != null &&
+                                d.Comanda.Venta.Fecha >= desdeInicio &&
+                                d.Comanda.Venta.Fecha <= hastaFin)
                     .GroupBy(d => new { d.ProductoId, d.Producto.Nombre })
-                    .Select(g => new { Nombre = g.Key.Nombre, Cantidad = g.Sum(d => d.Cantidad), Total = g.Sum(d => d.Cantidad * d.Precio_unitario) })
-                    .OrderByDescending(p => p.Cantidad).ToListAsync();
+                    .Select(g => new
+                    {
+                        Nombre = g.Key.Nombre,
+                        Cantidad = g.Sum(d => d.Cantidad),
+                        Total = g.Sum(d => d.Cantidad * d.Precio_unitario)
+                    })
+                    .OrderByDescending(p => p.Cantidad)
+                    .ToListAsync();
 
                 cuerpoHtml = $@"
-            <table border='1' cellpadding='6' cellspacing='0' width='100%'>
-                <thead style='background:#333; color:white'>
-                    <tr><th>Producto</th><th>Cantidad</th><th>Total</th></tr>
-                </thead>
-                <tbody>
-                    {string.Join("", productos.Select(p => $"<tr><td>{p.Nombre}</td><td>{p.Cantidad}</td><td>Bs {p.Total:0.00}</td></tr>"))}
-                </tbody>
-            </table>";
+        <table border='1' cellpadding='6' cellspacing='0' width='100%'>
+            <thead style='background:#333; color:white'>
+                <tr><th>Producto</th><th>Cantidad</th><th>Total</th></tr>
+            </thead>
+            <tbody>
+                {string.Join("", productos.Select(p => $"<tr><td>{p.Nombre}</td><td>{p.Cantidad}</td><td>Bs {p.Total:0.00}</td></tr>"))}
+            </tbody>
+        </table>";
             }
             else if (tipoReporte == "categorias")
             {
                 tituloReporte = "Ventas por Categoria";
                 var categorias = await _context.DetalleComandas
-                    .Include(d => d.Comanda).Include(d => d.Producto).ThenInclude(p => p.Categoria)
-                    .Where(d => d.Comanda.Fecha >= desdeInicio && d.Comanda.Fecha <= hastaFin)
+                    .Include(d => d.Comanda).ThenInclude(c => c.Venta)
+                    .Include(d => d.Producto).ThenInclude(p => p.Categoria)
+                    .Where(d => d.Comanda.Venta != null &&
+                                d.Comanda.Venta.Fecha >= desdeInicio &&
+                                d.Comanda.Venta.Fecha <= hastaFin)
                     .GroupBy(d => new { d.Producto.CategoriaId, d.Producto.Categoria.Nombre })
-                    .Select(g => new { Categoria = g.Key.Nombre, Cantidad = g.Sum(d => d.Cantidad), Total = g.Sum(d => d.Cantidad * d.Precio_unitario) })
-                    .OrderByDescending(c => c.Total).ToListAsync();
+                    .Select(g => new
+                    {
+                        Categoria = g.Key.Nombre,
+                        Cantidad = g.Sum(d => d.Cantidad),
+                        Total = g.Sum(d => d.Cantidad * d.Precio_unitario)
+                    })
+                    .OrderByDescending(c => c.Total)
+                    .ToListAsync();
 
                 cuerpoHtml = $@"
-            <table border='1' cellpadding='6' cellspacing='0' width='100%'>
-                <thead style='background:#333; color:white'>
-                    <tr><th>Categoria</th><th>Cantidad</th><th>Total</th></tr>
-                </thead>
-                <tbody>
-                    {string.Join("", categorias.Select(c => $"<tr><td>{c.Categoria}</td><td>{c.Cantidad}</td><td>Bs {c.Total:0.00}</td></tr>"))}
-                </tbody>
-            </table>";
+        <table border='1' cellpadding='6' cellspacing='0' width='100%'>
+            <thead style='background:#333; color:white'>
+                <tr><th>Categoria</th><th>Cantidad</th><th>Total</th></tr>
+            </thead>
+            <tbody>
+                {string.Join("", categorias.Select(c => $"<tr><td>{c.Categoria}</td><td>{c.Cantidad}</td><td>Bs {c.Total:0.00}</td></tr>"))}
+            </tbody>
+        </table>";
             }
             else if (tipoReporte == "horas")
             {
                 tituloReporte = "Horas con mas pedidos";
-                var comandas = await _context.Comandas
-                    .Where(c => c.Fecha >= desdeInicio && c.Fecha <= hastaFin).ToListAsync();
-                var horasPico = comandas.GroupBy(c => c.Fecha.Hour)
+                var ventas = await _context.Ventas
+                    .Where(v => v.Fecha >= desdeInicio && v.Fecha <= hastaFin)
+                    .ToListAsync();
+                var horasPico = ventas.GroupBy(v => v.Fecha.Hour)
                     .Select(g => new { Hora = g.Key, Total = g.Count() })
                     .OrderByDescending(h => h.Total).ToList();
 
                 cuerpoHtml = $@"
-            <table border='1' cellpadding='6' cellspacing='0' width='100%'>
-                <thead style='background:#333; color:white'>
-                    <tr><th>Hora</th><th>Total Comandas</th></tr>
-                </thead>
-                <tbody>
-                    {string.Join("", horasPico.Select(h => $"<tr><td>{h.Hora}:00 - {h.Hora + 1}:00</td><td>{h.Total}</td></tr>"))}
-                </tbody>
-            </table>";
+        <table border='1' cellpadding='6' cellspacing='0' width='100%'>
+            <thead style='background:#333; color:white'>
+                <tr><th>Hora</th><th>Total Ventas</th></tr>
+            </thead>
+            <tbody>
+                {string.Join("", horasPico.Select(h => $"<tr><td>{h.Hora}:00 - {h.Hora + 1}:00</td><td>{h.Total}</td></tr>"))}
+            </tbody>
+        </table>";
             }
             else if (tipoReporte == "dias")
             {
                 tituloReporte = "Dias con mas movimiento";
-                var comandas = await _context.Comandas
-                    .Where(c => c.Fecha >= desdeInicio && c.Fecha <= hastaFin).ToListAsync();
+                var ventas = await _context.Ventas
+                    .Where(v => v.Fecha >= desdeInicio && v.Fecha <= hastaFin)
+                    .ToListAsync();
                 var dias = new[] { "Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado" };
-                var diasSemana = comandas.GroupBy(c => c.Fecha.DayOfWeek)
+                var diasSemana = ventas.GroupBy(v => v.Fecha.DayOfWeek)
                     .Select(g => new { Dia = dias[(int)g.Key], Total = g.Count() })
                     .OrderByDescending(d => d.Total).ToList();
 
                 cuerpoHtml = $@"
-            <table border='1' cellpadding='6' cellspacing='0' width='100%'>
-                <thead style='background:#333; color:white'>
-                    <tr><th>Dia</th><th>Total Comandas</th></tr>
-                </thead>
-                <tbody>
-                    {string.Join("", diasSemana.Select(d => $"<tr><td>{d.Dia}</td><td>{d.Total}</td></tr>"))}
-                </tbody>
-            </table>";
+        <table border='1' cellpadding='6' cellspacing='0' width='100%'>
+            <thead style='background:#333; color:white'>
+                <tr><th>Dia</th><th>Total Ventas</th></tr>
+            </thead>
+            <tbody>
+                {string.Join("", diasSemana.Select(d => $"<tr><td>{d.Dia}</td><td>{d.Total}</td></tr>"))}
+            </tbody>
+        </table>";
             }
             else if (tipoReporte == "comandas")
             {
-                tituloReporte = "Comandas del periodo";
-                var comandas = await _context.Comandas
-                    .Include(c => c.Usuario)
-                    .Include(c => c.DetallesComanda).ThenInclude(d => d.Producto)
-                    .Where(c => c.Fecha >= desdeInicio && c.Fecha <= hastaFin)
-                    .OrderByDescending(c => c.Fecha).ToListAsync();
+                tituloReporte = "Ventas del periodo";
+                var ventas = await _context.Ventas
+                    .Include(v => v.Cliente)
+                    .Include(v => v.Comanda).ThenInclude(c => c.Usuario)
+                    .Include(v => v.Comanda).ThenInclude(c => c.DetallesComanda).ThenInclude(d => d.Producto)
+                    .Where(v => v.Fecha >= desdeInicio && v.Fecha <= hastaFin)
+                    .OrderByDescending(v => v.Fecha)
+                    .ToListAsync();
 
                 cuerpoHtml = $@"
-            <table border='1' cellpadding='6' cellspacing='0' width='100%'>
-                <thead style='background:#333; color:white'>
-                    <tr><th>Fecha</th><th>Mesa</th><th>Mesero</th><th>Estado</th><th>Productos</th><th>Total</th></tr>
-                </thead>
-                <tbody>
-                    {string.Join("", comandas.Select(c => $@"
-                    <tr>
-                        <td>{c.Fecha:dd/MM/yyyy HH:mm}</td>
-                        <td>Mesa {c.Nro_Mesa}</td>
-                        <td>{c.Usuario.Nombre} {c.Usuario.Apellido}</td>
-                        <td>{c.Estado}</td>
-                        <td>{string.Join(", ", c.DetallesComanda.Select(d => $"{d.Producto.Nombre} x{d.Cantidad}"))}</td>
-                        <td>Bs {c.DetallesComanda.Sum(d => d.Cantidad * d.Precio_unitario):0.00}</td>
-                    </tr>"))}
-                </tbody>
-            </table>";
+        <table border='1' cellpadding='6' cellspacing='0' width='100%'>
+            <thead style='background:#333; color:white'>
+                <tr>
+                    <th>Fecha</th><th>Mesa</th><th>Mesero</th>
+                    <th>Cliente</th><th>NIT/CI</th>
+                    <th>Metodo Pago</th><th>Productos</th><th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {string.Join("", ventas.Select(v => $@"
+                <tr>
+                    <td>{v.Fecha:dd/MM/yyyy HH:mm}</td>
+                    <td>Mesa {v.Comanda.Nro_Mesa}</td>
+                    <td>{v.Comanda.Usuario.Nombre} {v.Comanda.Usuario.Apellido}</td>
+                    <td>{(v.Cliente != null ? v.Cliente.Nombre : "Sin cliente")}</td>
+                    <td>{(v.Cliente != null ? v.Cliente.NITCI : "-")}</td>
+                    <td>{v.MetodoPago}</td>
+                    <td>{string.Join(", ", v.Comanda.DetallesComanda.Select(d => $"{d.Producto.Nombre} x{d.Cantidad}"))}</td>
+                    <td>Bs {v.Total:0.00}</td>
+                </tr>"))}
+            </tbody>
+        </table>";
             }
 
             var html = $@"
-        <html><body style='font-family:Arial; padding:20px'>
+    <html><body style='font-family:Arial; padding:20px'>
         <h1 style='color:#333'>Reporte - {tituloReporte}</h1>
         <p>Periodo: <strong>{desdeInicio:dd/MM/yyyy}</strong> al <strong>{hasta:dd/MM/yyyy}</strong></p>
-        <p>Total recaudado en el periodo: <strong>Bs {totalRecaudado:0.00}</strong></p>
+        <p>Total recaudado: <strong>Bs {totalRecaudado:0.00}</strong></p>
         <hr/>
         <h2>{tituloReporte}</h2>
         {cuerpoHtml}
-        </body></html>";
+    </body></html>";
 
             var doc = new HtmlToPdfDocument
             {

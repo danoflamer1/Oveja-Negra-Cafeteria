@@ -188,9 +188,9 @@
                 <div class="col-md-3 col-sm-6 mb-4 producto" data-cat="@cat.Id">
                     <div class="card-producto">
                         <img src="@(string.IsNullOrEmpty(prod.Imagen)
-                            ? "/imagenes/no-image.jpeg"
-                            : Url.Content("~/uploads/" + prod.Imagen))"
-                             class="card-img" />
+                                 ? "/imagen/no-image.jpeg"
+                                 : prod.Imagen)"
+                                 class="card-img" />
 
                         <div class="p-3">
                             <h5>@prod.Nombre</h5>
